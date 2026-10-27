@@ -304,7 +304,8 @@ include(minimp3/minimp3.pri)
 RESOURCES += res.qrc \
     res_custom_module.qrc \
     res_lisp.qrc \
-    res_qml.qrc
+    res_qml.qrc \
+    res_translations.qrc
 RESOURCES += res/config/res_config.qrc
 
 RESOURCES += res_fw_bms.qrc
@@ -348,6 +349,9 @@ DISTFILES += \
     android/src/com/vedder/vesc/Utils.java
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
+
+TRANSLATIONS += \
+    translations/vesc_tool_zh_CN.ts
 
 macx-clang:contains(QMAKE_HOST.arch, arm.*): {
     QMAKE_APPLE_DEVICE_ARCHS=arm64

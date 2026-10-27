@@ -23,6 +23,8 @@
 #include <QObject>
 #include <QMetaEnum>
 #include <cstdint>
+#include <QStringList>
+#include <QCoreApplication>
 #include <QQuickWindow>
 #include <QtGui/qpa/qplatformwindow.h>
 #include "vescinterface.h"
@@ -167,6 +169,12 @@ public:
     static QByteArray removeFirmwareHeader(QByteArray in);
 
     Q_INVOKABLE static QString configPath(QString subPath);
+
+    Q_INVOKABLE static QStringList availableTranslations();
+    Q_INVOKABLE static QString translationLanguage();
+    Q_INVOKABLE static QString translationLanguageName(const QString &lang);
+    Q_INVOKABLE static QString resolvedTranslationLanguage(const QString &lang);
+    Q_INVOKABLE static bool installTranslator(QCoreApplication *app, const QString &lang);
 
 signals:
 
