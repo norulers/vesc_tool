@@ -22,6 +22,7 @@
 #include <QDebug>
 #include <cmath>
 #include <QFileDialog>
+#include <QMessageBox>
 #include "utility.h"
 
 Preferences::Preferences(QWidget *parent) :
@@ -67,6 +68,30 @@ Preferences::Preferences(QWidget *parent) :
     ui->pollBmsDataBox->setValue(mSettings.value("poll_rate_bms_data", 10.0).toDouble());
     ui->darkModeBox->setChecked(Utility::isDarkMode());
     ui->estopTimeBox->setValue(mSettings.value("estop_ms", 5000).toInt());
+
+    ui->languageBox->blockSignals(true);
+    ui->languageBox->addItem(Utility::translationLanguageName("auto"), "auto");
+    ui->languageBox->addItem(Utility::translationLanguageName("en"), "en");
+    for (const QString &lang : Utility::availableTranslations()) {
+        if (lang != "en") {
+            ui->languageBox->addItem(Utility::translationLanguageName(lang), lang);
+        }
+    }
+    int langIndex = ui->languageBox->findData(Utility::translationLanguage());
+    if (langIndex < 0) {
+        langIndex = 0;
+    }
+    ui->languageBox->setCurrentIndex(langIndex);
+    ui->languageBox->blockSignals(false);
+
+    connect(ui->languageBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            [this](int index) {
+        Q_UNUSED(index)
+        mSettings.setValue("language", ui->languageBox->currentData().toString());
+        mSettings.sync();
+        QMessageBox::information(this, tr("Language"),
+                                 tr("VESC Tool must be restarted for the language change to take effect."));
+    });
 
 #ifdef HAS_GAMEPAD
     auto confAxis = [](QGamepad *gp, QGamepadManager::GamepadAxis axis) {

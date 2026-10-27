@@ -750,12 +750,12 @@ void MainWindow::dropEvent(QDropEvent *event)
         } else if (path.endsWith(".lisp", Qt::CaseInsensitive) ||
                    path.endsWith(".lbm", Qt::CaseInsensitive)) {
             if (mPageLisp->openFileTab(path)) {
-                showPage("LispBM Scripting");
+                showPage(tr("LispBM Scripting"));
                 event->acceptProposedAction();
             }
         } else if (path.endsWith(".qml", Qt::CaseInsensitive)) {
             if (mPageScripting->openFileTab(path)) {
-                showPage("QML Scripting");
+                showPage(tr("QML Scripting"));
                 event->acceptProposedAction();
             }
         }
@@ -1663,17 +1663,17 @@ void MainWindow::reloadPages()
     mPageTerminal = new PageTerminal(this);
     mPageTerminal->setVesc(mVesc);
     ui->pageWidget->addWidget(mPageTerminal);
-    addPageItem("Terminal",  theme + "icons/Console-96.png", "", false, true);
+    addPageItem(tr("Terminal"),  theme + "icons/Console-96.png", "", false, true);
 
     mPageScripting = new PageScripting(this);
     mPageScripting->setVesc(mVesc);
     ui->pageWidget->addWidget(mPageScripting);
-    addPageItem("QML Scripting",  theme + "icons_textedit/Outdent-96.png", "", false, true);
+    addPageItem(tr("QML Scripting"),  theme + "icons_textedit/Outdent-96.png", "", false, true);
 
     mPageLisp = new PageLisp(this);
     mPageLisp->setVesc(mVesc);
     ui->pageWidget->addWidget(mPageLisp);
-    addPageItem("LispBM Scripting",  theme + "icons_textedit/Outdent-96.png", "", false, true);
+    addPageItem(tr("LispBM Scripting"),  theme + "icons_textedit/Outdent-96.png", "", false, true);
 
     mPageCanAnalyzer = new PageCanAnalyzer(this);
     mPageCanAnalyzer->setVesc(mVesc);
@@ -1969,25 +1969,25 @@ void MainWindow::on_actionSaveAppConfigurationHeaderWrap_triggered()
 void MainWindow::on_actionTerminalPrintFaults_triggered()
 {
     mVesc->commands()->sendTerminalCmd("faults");
-    showPage("Terminal");
+    showPage(tr("Terminal"));
 }
 
 void MainWindow::on_actionTerminalShowHelp_triggered()
 {
     mVesc->commands()->sendTerminalCmd("help");
-    showPage("Terminal");
+    showPage(tr("Terminal"));
 }
 
 void MainWindow::on_actionTerminalClear_triggered()
 {
     mPageTerminal->clearTerminal();
-    showPage("Terminal");
+    showPage(tr("Terminal"));
 }
 
 void MainWindow::on_actionTerminalPrintThreads_triggered()
 {
     mVesc->commands()->sendTerminalCmd("threads");
-    showPage("Terminal");
+    showPage(tr("Terminal"));
 }
 
 void MainWindow::on_actionTerminalDRVResetLatchedFaults_triggered()

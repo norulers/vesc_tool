@@ -36,6 +36,11 @@
 #include <QtGlobal>
 #include <QNetworkInterface>
 #include <QDirIterator>
+#include <QDir>
+#include <QSettings>
+#include <QLocale>
+#include <QTranslator>
+#include <QLibraryInfo>
 #include <QPixmapCache>
 
 #include "maddy/parser.h"
@@ -2636,4 +2641,175 @@ QVariantMap Utility::getSafeAreaMargins(QQuickWindow *window)
     map["left"] = margins.left();
 #endif
     return map;
+}
+
+static const QString vtTransPrefix = QStringLiteral("vesc_tool_");
+
+QStringList Utility::availableTranslations()
+{
+    QStringList langs;
+
+    auto addFromPath = [&langs](const QString &path) {
+        QDir dir(path);
+        const QStringList files = dir.entryList({vtTransPrefix + "*.qm"}, QDir::Files);
+        for (const QString &f : files) {
+            QString code = f.mid(vtTransPrefix.size());
+            code.chop(3); // Remove .qm
+            if (!code.isEmpty() && !langs.contains(code)) {
+                langs.append(code);
+            }
+        }
+    };
+
+    addFromPath("://translations");
+    addFromPath(QCoreApplication::applicationDirPath() + "/translations");
+
+    langs.sort();
+    return langs;
+}
+
+QString Utility::translationLanguage()
+{
+    QSettings set;
+    return set.value("language", "auto").toString();
+}
+
+QString Utility::translationLanguageName(const QString &lang)
+{
+    if (lang == "auto" || lang.isEmpty()) {
+        return tr("System default");
+    }
+
+    if (lang == "en") {
+        return QStringLiteral("English");
+    }
+
+    QLocale locale(lang);
+    QString name = locale.nativeLanguageName();
+
+    if (name.isEmpty()) {
+        name = lang;
+    } else {
+        name[0] = name[0].toUpper();
+    }
+
+    return name;
+}
+
+QString Utility::resolvedTranslationLanguage(const QString &lang)
+{
+    const QStringList avail = availableTranslations();
+
+    if (lang.isEmpty() || lang == "auto") {
+        const QStringList uiLangs = QLocale::system().uiLanguages();
+
+        for (const QString &uiLang : uiLangs) {
+            const QString code = QLocale(uiLang).name();
+            if (avail.contains(code)) {
+                return code;
+            }
+        }
+
+        for (const QString &uiLang : uiLangs) {
+            const QString langOnly = QLocale(uiLang).name().section('_', 0, 0);
+            if (langOnly.isEmpty() || langOnly == "en") {
+                continue;
+            }
+
+            for (const QString &code : avail) {
+                if (code.section('_', 0, 0) == langOnly) {
+                    return code;
+                }
+            }
+        }
+
+        return QString();
+    }
+
+    return avail.contains(lang) ? lang : QString();
+}
+
+bool Utility::installTranslator(QCoreApplication *app, const QString &lang)
+{
+    static QTranslator *appTranslator = nullptr;
+    static QTranslator *qtTranslator = nullptr;
+
+    if (!app) {
+        app = QCoreApplication::instance();
+    }
+
+    if (!app) {
+        return false;
+    }
+
+    if (appTranslator) {
+        app->removeTranslator(appTranslator);
+        delete appTranslator;
+        appTranslator = nullptr;
+    }
+
+    if (qtTranslator) {
+        app->removeTranslator(qtTranslator);
+        delete qtTranslator;
+        qtTranslator = nullptr;
+    }
+
+    const QString code = resolvedTranslationLanguage(lang);
+    if (code.isEmpty()) {
+        return false;
+    }
+
+    const QString fileName = vtTransPrefix + code + ".qm";
+
+    QTranslator *appTr = new QTranslator();
+    bool ok = appTr->load(QCoreApplication::applicationDirPath() + "/translations/" + fileName);
+    if (!ok) {
+        ok = appTr->load("://translations/" + fileName);
+    }
+
+    if (!ok) {
+        delete appTr;
+        return false;
+    }
+
+    appTranslator = appTr;
+    app->installTranslator(appTranslator);
+
+    // Also translate the strings that come from Qt itself (standard dialogs etc.)
+    QTranslator *qtTr = new QTranslator();
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    const QString qtLibTransPath = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+#else
+    const QString qtLibTransPath = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+#endif
+
+    // Qt 5 ships the aggregated qt_<lang>.qm file, Qt 6 the split qtbase_<lang>.qm file.
+    // When deployed, the Qt translations usually are next to the executable instead.
+    const QStringList qtTransPaths = {qtLibTransPath,
+                                      QCoreApplication::applicationDirPath() + "/translations"};
+    const QStringList qtTransPrefixes = {"qtbase", "qt"};
+
+    bool qtLoaded = false;
+    for (const QString &path : qtTransPaths) {
+        for (const QString &prefix : qtTransPrefixes) {
+            qtLoaded = qtTr->load(QLocale(code), prefix, "_", path);
+            if (qtLoaded) {
+                break;
+            }
+        }
+
+        if (qtLoaded) {
+            break;
+        }
+    }
+
+    if (qtLoaded) {
+        qtTranslator = qtTr;
+        app->installTranslator(qtTranslator);
+    } else {
+        delete qtTr;
+    }
+
+    return true;
 }
